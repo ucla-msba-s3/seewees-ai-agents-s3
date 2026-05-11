@@ -33,9 +33,16 @@ PLANNER_PROMPT = ChatPromptTemplate.from_messages([
      "- risk_score 0 → 0% buffer\n"
      "- risk_score 1 → 10% buffer\n"
      "- risk_score 2 → 25% buffer\n"
-     "- risk_score 3 → 40% buffer + escalation\n"),
+     "- risk_score 3 → 40% buffer + escalation\n\n"
+     "AUDIT LOOP RULE:\n"
+     "- If audit feedback is provided, revise the plan to satisfy every audit item before returning the updated plan.\n"
+     "- Explicitly mention manager escalation/review when risk_score is 3.\n"
+     "- Explicitly acknowledge material trend or data quality constraints when provided by OpsDataAgent.\n"),
     ("user",
-     "Business context:\n{business_context}\n\nOps insights:\n{ops_insights}\n\nWeather risk:\n{weather_risk}\n\n"
+     "Business context:\n{business_context}\n\nOps insights:\n{ops_insights}\n\n"
+     "OpsDataAgent structured result:\n{ops_data_result}\n\n"
+     "Weather risk:\n{weather_risk}\n\n"
+     "Audit feedback from previous attempt, if any:\n{audit_feedback}\n\n"
      "Return:\n"
      "1) Dispatch plan for next 24-48h (include buffer recommendation using the mapping above)\n"
      "2) What to monitor (data + weather)\n"
@@ -58,5 +65,6 @@ REPORT_PROMPT = ChatPromptTemplate.from_messages([
      "Anomaly highlights:\n{anomaly_highlights}\n\n"
      "Weather risk:\n{weather_risk}\n\n"
      "Dispatch plan:\n{dispatch_plan}\n\n"
+     "Audit result:\n{audit_result}\n\n"
      "Generate HTML report.")
 ])

@@ -12,6 +12,8 @@ from tools.csv_tools import analyze_csv
 from tools.weather_tools import get_weather_forecast, derive_dispatch_weather_risk
 from tools.email_tools import send_email_smtp
 from agents import run_context_agent, run_ops_agent, run_planner_agent, run_report_agent
+from audit_agent import run_audit_agent
+from ops_data_agent import run_ops_data_agent
 
 load_dotenv()
 
@@ -26,11 +28,15 @@ class AppState(TypedDict, total=False):
     csv_kpis: Dict[str, Any]
     anomalies_md: str
     ops_insights: str
+    ops_data_result: Dict[str, Any]
 
     # In corridor mode we store a route-level dict in weather_risk; in fallback mode it's single-location risk dict.
     weather_risk: Dict[str, Any]
 
     dispatch_plan: str
+    audit_result: Dict[str, Any]
+    audit_feedback: str
+    audit_retry_count: int
     report_html: str
 
 
@@ -49,6 +55,8 @@ def node_pdf_context(state: AppState) -> AppState:
 
 def node_csv_analysis(state: AppState) -> AppState:
     res = analyze_csv(state["csv_path"])
+    ops_data_update = run_ops_data_agent(state)
+    ops_data_result = ops_data_update["ops_data_result"]
 
     anomalies_md = "(none detected or insufficient numeric data)"
     if not res.anomalies.empty:
@@ -61,6 +69,7 @@ def node_csv_analysis(state: AppState) -> AppState:
         "csv_kpis": res.kpis,
         "anomalies_md": anomalies_md,
         "ops_insights": ops_insights,
+        "ops_data_result": ops_data_result,
     }
 
 
@@ -174,8 +183,34 @@ def node_planner(state: AppState) -> AppState:
         business_context=state.get("business_context", ""),
         ops_insights=state.get("ops_insights", ""),
         weather_risk=state.get("weather_risk", {}),
+        ops_data_result=state.get("ops_data_result", {}),
+        audit_feedback=state.get("audit_feedback", ""),
     )
     return {"dispatch_plan": plan}
+
+
+def node_audit(state: AppState) -> AppState:
+    audit_update = run_audit_agent(state)
+    audit_result = audit_update["audit_result"]
+    retry_count = state.get("audit_retry_count", 0)
+
+    if audit_result.get("audit_status") == "fail":
+        retry_count += 1
+
+    return {
+        "audit_result": audit_result,
+        "audit_feedback": audit_result.get("feedback_to_planner", ""),
+        "audit_retry_count": retry_count,
+    }
+
+
+def route_after_audit(state: AppState) -> str:
+    audit_result = state.get("audit_result", {})
+    retry_count = state.get("audit_retry_count", 0)
+
+    if audit_result.get("audit_status") == "fail" and retry_count < 2:
+        return "planner"
+    return "report"
 
 
 def node_report(state: AppState) -> AppState:
@@ -185,6 +220,7 @@ def node_report(state: AppState) -> AppState:
         anomaly_highlights=state.get("anomalies_md", "(none)"),
         weather_risk=state.get("weather_risk", {}),
         dispatch_plan=state.get("dispatch_plan", ""),
+        audit_result=state.get("audit_result", {}),
     )
     return {"report_html": html}
 
@@ -207,6 +243,7 @@ def build_graph():
     g.add_node("csv_analysis", node_csv_analysis)
     g.add_node("weather", node_weather)
     g.add_node("planner", node_planner)
+    g.add_node("audit", node_audit)
     g.add_node("report", node_report)
     g.add_node("email", node_email)
 
@@ -214,7 +251,15 @@ def build_graph():
     g.add_edge("pdf_context", "csv_analysis")
     g.add_edge("csv_analysis", "weather")
     g.add_edge("weather", "planner")
-    g.add_edge("planner", "report")
+    g.add_edge("planner", "audit")
+    g.add_conditional_edges(
+        "audit",
+        route_after_audit,
+        {
+            "planner": "planner",
+            "report": "report",
+        },
+    )
     g.add_edge("report", "email")
     g.add_edge("email", END)
 
