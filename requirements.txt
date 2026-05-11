@@ -2,6 +2,7 @@ langgraph>=0.2.0
 langchain>=0.2.0
 langchain-community>=0.2.0
 langchain-openai>=0.1.0
+langchain-google-genai>=4.0.0
 langchain-chroma>=0.1.2
 
 pandas>=2.0.0
@@ -13,3 +14,4 @@ requests>=2.31.0
 pypdf>=4.0.0
 chromadb>=0.5.0
 langsmith>=0.1.100
+pytest>=8.0.0

@@ -1,0 +1,57 @@
+{
+  "ops_data_result": {
+    "agent_name": "OpsDataAgent",
+    "status": "success",
+    "summary": "Analyzed shipment rows, period-over-period metrics, and data quality issues.",
+    "trend_analysis": {
+      "period_type": "period_over_period_by_date",
+      "date_column": "ship_date",
+      "metrics": [
+        {
+          "metric_name": "delivery_delay_rate",
+          "current_period": 0.14,
+          "previous_period": 0.08,
+          "change_abs": 0.06,
+          "change_pct": 0.75,
+          "trend_direction": "up",
+          "severity": "critical"
+        }
+      ]
+    },
+    "data_quality_issues": [
+      {
+        "field": "item_id",
+        "issue": "Missing values detected",
+        "affected_records": 12,
+        "missing_rate": 0.14,
+        "severity": "medium"
+      }
+    ],
+    "item_master_matches": [
+      {
+        "missing_identifier": "item_id",
+        "matched_item_id": null,
+        "matched_product_class": null,
+        "confidence": 0.0,
+        "source": "Item Master Appendix",
+        "note": "Column has missing identifiers; cross-reference is required before final planning."
+      }
+    ],
+    "constraints": [
+      {
+        "id": "ops_trend_001",
+        "rule": "If an operational metric changes by 50% or more period-over-period, planner must explain the dispatch impact.",
+        "severity": "high",
+        "source": "OpsDataAgent"
+      }
+    ],
+    "recommendations": [
+      {
+        "type": "planning_adjustment",
+        "priority": "high",
+        "recommendation": "Review high-change operational metrics before finalizing dispatch buffers and resource allocation."
+      }
+    ],
+    "data": {}
+  }
+}
