@@ -4,14 +4,33 @@ Multi-agent system for operations/dispatch planning:
 - Reads business context & KPI definitions from a PDF (RAG)
 - Analyzes ops data from CSV (KPIs + anomaly detection)
 - Pulls weather forecast and derives dispatch risk
+- Enforces a self-correction Audit Loop before report generation
 - Produces a leadership-ready report
 - Emails the report via Gmail SMTP (app password)
 
 ## Project Structure
 - `data/` input PDF + CSV
+- `docs/` project background, data augmentation strategy, KPI definitions, and methodology
+- `examples/` sample agent outputs and audit demo cases
 - `src/` application code
 - `chroma_db/` local vector store (not committed)
 - `.env` secrets (not committed)
+
+## Architecture
+
+```text
+pdf_context -> csv_analysis / OpsDataAgent -> weather -> planner -> audit -> report -> email
+```
+
+The audit node creates the non-linear self-correction loop:
+
+```text
+PlannerAgent -> AuditAgent
+Audit pass -> ReportAgent
+Audit fail -> PlannerAgent with feedback
+```
+
+See `docs/project_background.md` for the business problem, missing-link analysis, KPI definitions, data augmentation strategy, and technical methodology.
 
 ## Setup
 ```bash
@@ -25,6 +44,14 @@ cp .env.example .env
 # For OpenAI fallback, set LLM_PROVIDER=openai and fill OPENAI_API_KEY.
 windows:  python src/main.py
 ```
+
+## Tests
+
+```bash
+PYTHONPATH=src python -m pytest -q
+```
+
+The current tests cover AuditAgent failure detection, pass detection, and graph routing after audit pass/fail.
 
 ## LLM Provider and Cost Guardrails
 
