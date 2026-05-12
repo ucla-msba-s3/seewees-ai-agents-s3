@@ -706,7 +706,7 @@ def render_audit_tab() -> None:
         <div class="sw-detail-row">
             <span class="sw-detail-icon">📋</span>
             <span class="sw-detail-label">Dispatch Plan</span>
-            <span class="sw-detail-value" style="color:#64748b;font-style:italic">"{dispatch_plan[:80]}{'…' if len(dispatch_plan)>80 else ''}"</span>
+            <span class="sw-detail-value" style="color:#64748b;font-style:italic">"{dispatch_plan}"</span>
         </div>
         <div class="sw-detail-row" style="border-bottom:none">
             <span class="sw-detail-icon">❗</span>
