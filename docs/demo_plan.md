@@ -137,7 +137,31 @@ What to say:
 This is how the product handles hypothetical disruption. The scenario agent converts disruptions into KPI impacts and constraints, so the PlannerAgent must produce contingency recommendations rather than a generic dispatch plan.
 ```
 
-## Demo D: Full Product Run
+## Demo D: UI Command Center Walkthrough
+
+Purpose: Show the product as a realistic user-facing operations tool.
+
+Command:
+
+```bash
+streamlit run src/ui_app.py
+```
+
+Recommended walkthrough:
+
+1. Start on Overview and explain the agent pipeline.
+2. Open OpsData to show CSV summary and the OpsDataAgent integration contract.
+3. Open Scenarios and run the default what-if disruptions.
+4. Open Audit and run the deterministic fail case.
+5. Open Full Pipeline only if API quota and network are ready.
+
+What to say:
+
+```text
+This UI lets an operations user test each agent independently before trusting the full pipeline. It also gives function owners a shared surface to verify their outputs during integration.
+```
+
+## Demo E: Full Product Run
 
 Purpose: Show the complete product experience.
 
@@ -179,7 +203,7 @@ What the run demonstrates:
 
 Backup plan:
 
-- If live API quota, weather network, or latency becomes a problem, use Demo B, Demo C, and a saved/sample report screenshot or HTML output.
+- If live API quota, weather network, or latency becomes a problem, use Demo B, Demo C, Demo D, and a saved/sample report screenshot or HTML output.
 - The presentation should not depend entirely on a live LLM call.
 
 What to say after the run:
