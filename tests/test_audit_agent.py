@@ -24,3 +24,26 @@ def test_audit_passes_when_risk_score_3_has_escalation():
 
     assert result["audit_status"] == "pass"
     assert result["violations"] == []
+
+
+def test_audit_fails_when_scenario_constraint_not_addressed():
+    state = {
+        "dispatch_plan": "Proceed with dispatch as planned.",
+        "weather_risk": {"risk_score_0_3": 1},
+        "scenario_result": {
+            "constraints": [
+                {
+                    "id": "scenario_capacity_001",
+                    "rule": "If simulated capacity utilization exceeds 90%, planner must recommend backup capacity or shipment prioritization.",
+                    "severity": "high",
+                    "source": "ScenarioAgent",
+                }
+            ]
+        },
+    }
+
+    result = run_audit_agent(state)["audit_result"]
+    rule_ids = [violation["rule_id"] for violation in result["violations"]]
+
+    assert result["audit_status"] == "fail"
+    assert "scenario_contingency_001" in rule_ids

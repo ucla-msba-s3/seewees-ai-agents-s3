@@ -25,16 +25,17 @@ Steps:
 3. Show the agent pipeline.
 
    ```text
-   ContextAgent -> OpsDataAgent -> WeatherAgent -> PlannerAgent -> AuditAgent -> ReportAgent
-                                                    ↑              |
-                                                    | fail         | pass
-                                                    +--------------+
+   ContextAgent -> OpsDataAgent -> WeatherAgent -> ScenarioAgent -> PlannerAgent -> AuditAgent -> ReportAgent
+                                                                   ↑              |
+                                                                   | fail         | pass
+                                                                   +--------------+
    ```
 
 4. Explain each agent in one sentence.
    - ContextAgent extracts business rules, constraints, thresholds, and escalation policies from the PDF.
    - OpsDataAgent analyzes shipment data, missing fields, trends, item mappings, and planning constraints.
    - WeatherAgent converts corridor forecasts into route-level risk scores.
+   - ScenarioAgent simulates demand spike, warehouse closure, and driver shortage impacts on KPIs.
    - PlannerAgent combines the evidence into a dispatch recommendation.
    - AuditAgent checks the plan against safety rules and operational constraints.
    - ReportAgent creates an executive-ready HTML decision packet.
@@ -101,7 +102,42 @@ What to say:
 This is the system handling failure. The route risk score is critical, but the draft plan forgot manager escalation. Instead of sending that plan to executives, AuditAgent returns structured feedback and LangGraph routes back to PlannerAgent.
 ```
 
-## Demo C: Full Product Run
+## Demo C: What-If Scenario Simulation
+
+Purpose: Show business complexity beyond a single current-state report.
+
+This demo is deterministic and does not spend Gemini/OpenAI quota.
+
+Command:
+
+```bash
+PYTHONPATH=src python - <<'PY'
+import json
+from scenario_agent import run_scenario_agent
+
+with open("examples/scenario_input.json", encoding="utf-8") as f:
+    state = json.load(f)
+
+result = run_scenario_agent(state)["scenario_result"]
+print(result["summary"])
+
+for scenario in result["scenarios"]:
+    print(f"\nScenario: {scenario['scenario_name']}")
+    print("Summary:", scenario["summary"])
+    for impact in scenario["kpi_impacts"]:
+        print(f"- {impact['kpi']}: {impact['baseline']} -> {impact['simulated']} ({impact['severity']})")
+    for recommendation in scenario["recommendations"][:2]:
+        print(f"  Recommendation: {recommendation}")
+PY
+```
+
+What to say:
+
+```text
+This is how the product handles hypothetical disruption. The scenario agent converts disruptions into KPI impacts and constraints, so the PlannerAgent must produce contingency recommendations rather than a generic dispatch plan.
+```
+
+## Demo D: Full Product Run
 
 Purpose: Show the complete product experience.
 
@@ -136,13 +172,14 @@ What the run demonstrates:
 - PDF rules and constraints are retrieved.
 - CSV operations data is summarized.
 - Weather risk is calculated.
+- ScenarioAgent simulates disruption impact.
 - PlannerAgent proposes a dispatch plan.
-- AuditAgent checks the plan.
+- AuditAgent checks the plan against safety, operations, and scenario constraints.
 - ReportAgent produces an executive HTML report.
 
 Backup plan:
 
-- If live API quota, weather network, or latency becomes a problem, use Demo B and a saved/sample report screenshot or HTML output.
+- If live API quota, weather network, or latency becomes a problem, use Demo B, Demo C, and a saved/sample report screenshot or HTML output.
 - The presentation should not depend entirely on a live LLM call.
 
 What to say after the run:

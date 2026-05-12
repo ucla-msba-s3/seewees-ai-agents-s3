@@ -14,6 +14,7 @@ from tools.email_tools import send_email_smtp
 from agents import run_context_agent, run_ops_agent, run_planner_agent, run_report_agent
 from audit_agent import run_audit_agent
 from ops_data_agent import run_ops_data_agent
+from scenario_agent import run_scenario_agent
 
 load_dotenv()
 
@@ -32,6 +33,8 @@ class AppState(TypedDict, total=False):
 
     # In corridor mode we store a route-level dict in weather_risk; in fallback mode it's single-location risk dict.
     weather_risk: Dict[str, Any]
+    scenarios: List[Dict[str, Any]]
+    scenario_result: Dict[str, Any]
 
     dispatch_plan: str
     audit_result: Dict[str, Any]
@@ -178,12 +181,17 @@ def node_weather(state: AppState) -> AppState:
     return {"weather_risk": route_risk}
 
 
+def node_scenario(state: AppState) -> AppState:
+    return run_scenario_agent(state)
+
+
 def node_planner(state: AppState) -> AppState:
     plan = run_planner_agent(
         business_context=state.get("business_context", ""),
         ops_insights=state.get("ops_insights", ""),
         weather_risk=state.get("weather_risk", {}),
         ops_data_result=state.get("ops_data_result", {}),
+        scenario_result=state.get("scenario_result", {}),
         audit_feedback=state.get("audit_feedback", ""),
     )
     return {"dispatch_plan": plan}
@@ -221,6 +229,7 @@ def node_report(state: AppState) -> AppState:
         weather_risk=state.get("weather_risk", {}),
         dispatch_plan=state.get("dispatch_plan", ""),
         audit_result=state.get("audit_result", {}),
+        scenario_result=state.get("scenario_result", {}),
     )
     return {"report_html": html}
 
@@ -242,6 +251,7 @@ def build_graph():
     g.add_node("pdf_context", node_pdf_context)
     g.add_node("csv_analysis", node_csv_analysis)
     g.add_node("weather", node_weather)
+    g.add_node("scenario", node_scenario)
     g.add_node("planner", node_planner)
     g.add_node("audit", node_audit)
     g.add_node("report", node_report)
@@ -250,7 +260,8 @@ def build_graph():
     g.set_entry_point("pdf_context")
     g.add_edge("pdf_context", "csv_analysis")
     g.add_edge("csv_analysis", "weather")
-    g.add_edge("weather", "planner")
+    g.add_edge("weather", "scenario")
+    g.add_edge("scenario", "planner")
     g.add_edge("planner", "audit")
     g.add_conditional_edges(
         "audit",

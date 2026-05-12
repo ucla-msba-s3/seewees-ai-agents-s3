@@ -19,6 +19,7 @@ The current data and documents do not contain every variable needed for realisti
 | Item Master identifier mapping | Missing item or SKU fields can hide product class and cold-chain needs. | Shipment CSV plus Item Master Appendix snippets from playbook. | Function owner will cross-reference or simulate mapping confidence. | OpsDataAgent, PlannerAgent |
 | Hospital priority level | Not all destinations carry equal clinical urgency. | Destination, product class, customer type, or simulated priority table. | Simulate priority level if not provided. | PlannerAgent, ReportAgent |
 | Cold-chain capacity / truck availability | Recommendations are unrealistic without resource limits. | Shipment volume, product class, and simulated fleet assumptions. | Simulate capacity constraints if no fleet table exists. | PlannerAgent, AuditAgent |
+| What-if disruption parameters | Leadership needs contingency plans before disruptions happen. | User-provided scenario JSON or default scenario assumptions. | Simulate demand spike, warehouse closure, or driver shortage. | ScenarioAgent, PlannerAgent, AuditAgent, ReportAgent |
 
 ## KPI Definitions
 
@@ -29,13 +30,14 @@ The current data and documents do not contain every variable needed for realisti
 | Data Quality Issue Count | Count of material missing or unreliable fields. | Shipment CSV, OpsDataAgent checks. | Any high-severity issue must be acknowledged in plan. |
 | Trend Risk Severity | Period-over-period change in operational metric. | Shipment metrics split by week, month, date, or row-order periods. | `>=25%` medium, `>=50%` high, `>=75%` critical. |
 | Audit Pass Rate | Whether the plan passes rule checks before report generation. | Dispatch plan, weather risk, PDF constraints, Ops constraints. | Final report should be generated only after pass or retry-limit warning. |
+| Scenario KPI Impact | Difference between baseline and simulated KPI under a disruption. | Scenario type and parameters, capacity assumptions, resource assumptions. | High/critical impacts require contingency recommendations. |
 
 ## Technical Methodology
 
 The graph uses LangGraph with a shared state object. The current architecture is:
 
 ```text
-pdf_context -> csv_analysis / OpsDataAgent -> weather -> planner -> audit -> report -> email
+pdf_context -> csv_analysis / OpsDataAgent -> weather -> ScenarioAgent -> planner -> audit -> report -> email
 ```
 
 The audit node adds non-linear behavior:
@@ -48,12 +50,23 @@ Audit fail -> PlannerAgent with feedback
 
 The retry limit prevents infinite loops. If the retry limit is reached, the system still produces a report, but the audit result and remaining caveats are passed into the ReportAgent so leadership can see the unresolved risk.
 
+## What-If Scenario Simulation
+
+The ScenarioAgent evaluates hypothetical operational disruptions before final planning. The default scenarios are:
+
+- 20% demand spike.
+- Primary warehouse closure.
+- Driver shortage.
+
+Each scenario produces KPI impacts, constraints, and contingency recommendations. This connects missing operational variables, such as available drivers, warehouse status, and capacity limits, to executive decisions. It also gives AuditAgent additional constraints to enforce so the final report cannot ignore high-impact disruptions.
+
 ## Quality Assurance Logic
 
 The AuditAgent acts as the quality gate. It enforces:
 
 - Safety rules extracted from the playbook and weather risk contract.
 - Constraints emitted by OpsDataAgent, including data quality and trend-impact requirements.
+- Constraints emitted by ScenarioAgent, including capacity, rerouting, warehouse, and driver shortage contingencies.
 - Executive readiness checks, such as requiring escalation language for critical risk.
 
 This design prevents bad information from moving directly to leadership and demonstrates how the system handles failure rather than only summarizing successful cases.

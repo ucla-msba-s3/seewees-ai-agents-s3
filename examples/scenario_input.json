@@ -1,0 +1,25 @@
+{
+  "scenarios": [
+    {
+      "scenario_name": "20% demand spike",
+      "type": "demand_spike",
+      "parameters": {
+        "demand_spike_pct": 0.2
+      }
+    },
+    {
+      "scenario_name": "Primary warehouse closure",
+      "type": "warehouse_closure",
+      "parameters": {
+        "closed_warehouse": "primary"
+      }
+    },
+    {
+      "scenario_name": "Driver shortage",
+      "type": "driver_shortage",
+      "parameters": {
+        "available_driver_pct": 0.75
+      }
+    }
+  ]
+}

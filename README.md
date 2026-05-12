@@ -4,6 +4,7 @@ Multi-agent system for operations/dispatch planning:
 - Reads business context & KPI definitions from a PDF (RAG)
 - Analyzes ops data from CSV (KPIs + anomaly detection)
 - Pulls weather forecast and derives dispatch risk
+- Simulates what-if disruptions such as demand spike, warehouse closure, and driver shortage
 - Enforces a self-correction Audit Loop before report generation
 - Produces a leadership-ready report
 - Emails the report via Gmail SMTP (app password)
@@ -19,7 +20,7 @@ Multi-agent system for operations/dispatch planning:
 ## Architecture
 
 ```text
-pdf_context -> csv_analysis / OpsDataAgent -> weather -> planner -> audit -> report -> email
+pdf_context -> csv_analysis / OpsDataAgent -> weather -> scenario -> planner -> audit -> report -> email
 ```
 
 The audit node creates the non-linear self-correction loop:
@@ -31,6 +32,16 @@ Audit fail -> PlannerAgent with feedback
 ```
 
 See `docs/project_background.md` for the business problem, missing-link analysis, KPI definitions, data augmentation strategy, and technical methodology.
+
+## What-If Scenarios
+
+ScenarioAgent supports disruption simulation through `state["scenarios"]`. If no scenarios are provided, it runs three defaults:
+
+- 20% demand spike
+- Primary warehouse closure
+- Driver shortage
+
+Example input lives in `examples/scenario_input.json`. Scenario outputs include KPI impacts, constraints, and contingency recommendations that flow into PlannerAgent, AuditAgent, and ReportAgent.
 
 ## Setup
 ```bash
@@ -61,7 +72,8 @@ Recommended sequence:
 
 1. Demo A: Product walkthrough for a non-technical audience.
 2. Demo B: Stable audit failure case that does not spend API quota.
-3. Demo C: Full product run with Gemini/OpenAI key.
+3. Demo C: What-if scenario simulation that does not spend API quota.
+4. Demo D: Full product run with Gemini/OpenAI key.
 
 Stable audit demo:
 
@@ -81,6 +93,27 @@ print("Audit status:", result["audit_status"])
 print("Next graph step:", next_step)
 for violation in result["violations"]:
     print(f"- {violation['rule_id']} | {violation['severity']} | {violation['required_fix']}")
+PY
+```
+
+What-if scenario demo:
+
+```bash
+PYTHONPATH=src python - <<'PY'
+import json
+from scenario_agent import run_scenario_agent
+
+with open("examples/scenario_input.json", encoding="utf-8") as f:
+    state = json.load(f)
+
+result = run_scenario_agent(state)["scenario_result"]
+print(result["summary"])
+
+for scenario in result["scenarios"]:
+    print(f"\nScenario: {scenario['scenario_name']}")
+    print("Summary:", scenario["summary"])
+    for impact in scenario["kpi_impacts"]:
+        print(f"- {impact['kpi']}: {impact['baseline']} -> {impact['simulated']} ({impact['severity']})")
 PY
 ```
 
