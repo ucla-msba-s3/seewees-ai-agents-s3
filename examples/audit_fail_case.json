@@ -1,0 +1,73 @@
+{
+  "description": "Demo case: Planner forgets manager escalation when route risk score is critical.",
+  "state": {
+    "business_context": "Safety protocol: critical dispatch risk must escalate for manager review before final dispatch approval.",
+    "weather_risk": {
+      "route_risk_score_0_3": 3,
+      "worst_waypoint": {
+        "waypoint": "W3",
+        "city": "New Haven",
+        "state": "CT",
+        "risk_score_0_3": 3
+      },
+      "risk_flags": [
+        "heavy_precipitation",
+        "high_wind_gust"
+      ]
+    },
+    "ops_data_result": {
+      "agent_name": "OpsDataAgent",
+      "status": "success",
+      "summary": "Delay rate increased period-over-period and item_id has missing values.",
+      "trend_analysis": {
+        "period_type": "week_over_week",
+        "metrics": [
+          {
+            "metric_name": "delivery_delay_rate",
+            "current_period": 0.14,
+            "previous_period": 0.08,
+            "change_abs": 0.06,
+            "change_pct": 0.75,
+            "trend_direction": "up",
+            "severity": "critical"
+          }
+        ]
+      },
+      "data_quality_issues": [
+        {
+          "field": "item_id",
+          "issue": "Missing values detected",
+          "affected_records": 12,
+          "missing_rate": 0.14,
+          "severity": "medium"
+        }
+      ],
+      "constraints": [
+        {
+          "id": "ops_trend_001",
+          "rule": "If an operational metric changes by 50% or more period-over-period, planner must explain the dispatch impact.",
+          "severity": "high",
+          "source": "OpsDataAgent"
+        },
+        {
+          "id": "ops_quality_001",
+          "rule": "Planner must acknowledge material data quality issues before final report generation.",
+          "severity": "medium",
+          "source": "OpsDataAgent"
+        }
+      ],
+      "recommendations": [],
+      "data": {}
+    },
+    "dispatch_plan": "Proceed with dispatch on the primary I-95 route using a 40% weather buffer. Monitor conditions at W3."
+  },
+  "expected_audit_result": {
+    "audit_status": "fail",
+    "expected_violations": [
+      "safety_weather_001",
+      "pdf_context_escalation_001",
+      "ops_quality_001"
+    ],
+    "expected_next_graph_step": "planner"
+  }
+}
