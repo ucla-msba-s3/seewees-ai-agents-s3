@@ -89,6 +89,7 @@ def run_planner_agent(
     ops_insights: str,
     weather_risk: Dict[str, Any],
     ops_data_result: Dict[str, Any] | None = None,
+    scenario_result: Dict[str, Any] | None = None,
     audit_feedback: str = "",
 ) -> str:
     _check_call_budget()
@@ -97,6 +98,7 @@ def run_planner_agent(
         ops_insights=ops_insights,
         ops_data_result=ops_data_result or {},
         weather_risk=weather_risk,
+        scenario_result=scenario_result or {},
         audit_feedback=audit_feedback or "(none)",
     )).content
 
@@ -107,6 +109,7 @@ def run_report_agent(
     weather_risk: Dict[str, Any],
     dispatch_plan: str,
     audit_result: Dict[str, Any] | None = None,
+    scenario_result: Dict[str, Any] | None = None,
 ) -> str:
     _check_call_budget()
     return get_llm().invoke(REPORT_PROMPT.format_messages(
@@ -116,4 +119,5 @@ def run_report_agent(
         weather_risk=weather_risk,
         dispatch_plan=dispatch_plan,
         audit_result=audit_result or {},
+        scenario_result=scenario_result or {},
     )).content

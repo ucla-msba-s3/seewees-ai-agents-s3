@@ -37,17 +37,20 @@ PLANNER_PROMPT = ChatPromptTemplate.from_messages([
      "AUDIT LOOP RULE:\n"
      "- If audit feedback is provided, revise the plan to satisfy every audit item before returning the updated plan.\n"
      "- Explicitly mention manager escalation/review when risk_score is 3.\n"
-     "- Explicitly acknowledge material trend or data quality constraints when provided by OpsDataAgent.\n"),
+     "- Explicitly acknowledge material trend or data quality constraints when provided by OpsDataAgent.\n"
+     "- Explicitly address ScenarioAgent constraints when what-if scenarios show high or critical KPI impact.\n"),
     ("user",
      "Business context:\n{business_context}\n\nOps insights:\n{ops_insights}\n\n"
      "OpsDataAgent structured result:\n{ops_data_result}\n\n"
      "Weather risk:\n{weather_risk}\n\n"
+     "ScenarioAgent what-if simulation result:\n{scenario_result}\n\n"
      "Audit feedback from previous attempt, if any:\n{audit_feedback}\n\n"
      "Return:\n"
      "1) Dispatch plan for next 24-48h (include buffer recommendation using the mapping above)\n"
      "2) What to monitor (data + weather)\n"
      "3) Contingency triggers (use risk_flags / risk_score only)\n"
-     "4) Expected KPI impacts\n")
+     "4) Expected KPI impacts\n"
+     "5) Scenario-specific contingency recommendations when scenario_result is provided\n")
 ])
 
 REPORT_PROMPT = ChatPromptTemplate.from_messages([
@@ -78,5 +81,6 @@ REPORT_PROMPT = ChatPromptTemplate.from_messages([
      "Weather risk:\n{weather_risk}\n\n"
      "Dispatch plan:\n{dispatch_plan}\n\n"
      "Audit result:\n{audit_result}\n\n"
+     "Scenario simulation result:\n{scenario_result}\n\n"
      "Generate HTML report.")
 ])

@@ -38,3 +38,9 @@ def test_audit_demo_case_exists():
     case = Path("examples/audit_fail_case.json")
 
     assert case.exists()
+
+
+def test_scenario_input_example_exists():
+    case = Path("examples/scenario_input.json")
+
+    assert case.exists()

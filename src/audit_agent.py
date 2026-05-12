@@ -128,6 +128,39 @@ def _check_trend_impact_explained(state: dict) -> Dict[str, Any] | None:
     return None
 
 
+def _check_scenario_constraints_addressed(state: dict) -> Dict[str, Any] | None:
+    dispatch_plan = state.get("dispatch_plan", "")
+    scenario_result = state.get("scenario_result", {})
+    constraints = scenario_result.get("constraints", [])
+
+    if not constraints:
+        return None
+
+    required_terms = (
+        "scenario",
+        "what-if",
+        "contingency",
+        "backup",
+        "priorit",
+        "reroute",
+        "alternate",
+        "capacity",
+        "driver",
+        "warehouse",
+        "carrier",
+    )
+    if not _plan_contains_any(dispatch_plan, required_terms):
+        return _violation(
+            rule_id="scenario_contingency_001",
+            rule="Planner must address high-impact what-if scenario constraints with contingency recommendations.",
+            issue="Planner did not address ScenarioAgent constraints such as capacity, warehouse, or driver disruptions.",
+            required_fix="Add scenario-specific contingency actions, including backup capacity, rerouting, driver coverage, or shipment prioritization.",
+            source="ScenarioAgent",
+            severity="high",
+        )
+    return None
+
+
 AUDIT_RULES: List[Dict[str, Any]] = [
     {
         "id": "safety_weather_001",
@@ -152,6 +185,12 @@ AUDIT_RULES: List[Dict[str, Any]] = [
         "description": "High trend risk must change planning or monitoring.",
         "source": "OpsDataAgent",
         "check": _check_trend_impact_explained,
+    },
+    {
+        "id": "scenario_contingency_001",
+        "description": "High-impact what-if scenarios require contingency actions.",
+        "source": "ScenarioAgent",
+        "check": _check_scenario_constraints_addressed,
     },
 ]
 
