@@ -22,7 +22,7 @@ def _embedding_provider() -> str:
 
 def _embedding_model(provider: str) -> str:
     if provider == "gemini":
-        return os.getenv("EMBEDDING_MODEL", "models/text-embedding-004")
+        return os.getenv("EMBEDDING_MODEL", "gemini-embedding-001")
     return os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
 
 
