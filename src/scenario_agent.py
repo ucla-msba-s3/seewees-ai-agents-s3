@@ -140,6 +140,107 @@ def _driver_shortage_result(scenario: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _route_blockage_result(scenario: Dict[str, Any]) -> Dict[str, Any]:
+    params = scenario.get("parameters", {})
+    waypoint = params.get("blocked_waypoint", "W3")
+    closure_hours = float(params.get("closure_hours", 4.0))
+
+    reroute_km_map = {"W1": 30, "W2": 45, "W3": 80, "W4": 55, "W5": 20}
+    reroute_km = reroute_km_map.get(waypoint, 60)
+
+    reroute_delay = reroute_km / 60.0
+    total_delay = round(closure_hours * 0.5 + reroute_delay, 1)
+    sla_at_risk_pct = round(min(1.0, total_delay / 6.0), 2)
+    severity = _severity(total_delay, medium=2.0, high=4.0, critical=6.0)
+
+    city_map = {"W1": "Newark NJ", "W2": "Bronx NY", "W3": "New Haven CT",
+                "W4": "Providence RI", "W5": "Boston MA"}
+    city = city_map.get(waypoint, waypoint)
+
+    return {
+        "scenario_name": scenario.get("scenario_name", f"I-95 blockage at {waypoint}"),
+        "type": "route_blockage",
+        "status": "success",
+        "summary": (
+            f"I-95 blockage at {waypoint} ({city}) for {closure_hours:.0f}h forces a {reroute_km}km reroute, "
+            f"adding ~{total_delay}h delay. {int(sla_at_risk_pct * 100)}% of Tier-1 SLA window consumed by delay alone."
+        ),
+        "kpi_impacts": [
+            {"kpi": "estimated_delay_hours",  "baseline": 0.0, "simulated": total_delay,
+             "change": total_delay,       "severity": severity},
+            {"kpi": "reroute_distance_km",    "baseline": 0,   "simulated": reroute_km,
+             "change": reroute_km,        "severity": "medium"},
+            {"kpi": "tier1_sla_consumed_pct", "baseline": 0.0, "simulated": sla_at_risk_pct,
+             "change": sla_at_risk_pct,   "severity": severity},
+        ],
+        "constraints": [
+            {
+                "id": "scenario_route_001",
+                "rule": (
+                    "If I-95 blockage causes delay > 2h, planner must specify rerouting options, "
+                    "alternate staging, and SLA-risk notifications for affected hospitals."
+                ),
+                "severity": "high",
+                "source": "ScenarioAgent",
+            }
+        ] if total_delay > 2.0 else [],
+        "recommendations": [
+            f"Reroute shipments around {waypoint} ({city}) via the nearest alternate highway.",
+            "Prioritize Tier-1 drugs (Epinephrine, Remdesivir) on first available clear route.",
+            "Stage non-critical shipments at nearest depot until corridor reopens.",
+            "Proactively notify all destination hospitals of revised ETA.",
+        ],
+    }
+
+
+def _hospital_surge_result(scenario: Dict[str, Any]) -> Dict[str, Any]:
+    params = scenario.get("parameters", {})
+    hospital = params.get("surge_hospital", "Boston-MGH")
+    surge_level = params.get("surge_level", "moderate").lower()
+
+    compression_h    = {"moderate": 3,    "severe": 5   }.get(surge_level, 3)
+    priority_count   = {"moderate": 8,    "severe": 15  }.get(surge_level, 8)
+    conflict_pct     = {"moderate": 0.25, "severe": 0.50}.get(surge_level, 0.25)
+    sev              = "critical" if surge_level == "severe" else "high"
+
+    return {
+        "scenario_name": scenario.get("scenario_name", f"{hospital} emergency surge"),
+        "type": "hospital_surge",
+        "status": "success",
+        "summary": (
+            f"{surge_level.capitalize()} emergency surge at {hospital}: "
+            f"{priority_count} shipments escalated to Tier-1 priority. "
+            f"Delivery window compressed by {compression_h}h; "
+            f"{int(conflict_pct * 100)}% of normal dispatch schedule conflicts with surge demand."
+        ),
+        "kpi_impacts": [
+            {"kpi": "priority_shipments_escalated", "baseline": 0,   "simulated": priority_count,
+             "change": priority_count,  "severity": sev},
+            {"kpi": "sla_compression_hours",        "baseline": 0,   "simulated": compression_h,
+             "change": compression_h,   "severity": sev},
+            {"kpi": "schedule_conflict_pct",        "baseline": 0.0, "simulated": conflict_pct,
+             "change": conflict_pct,    "severity": "high"},
+        ],
+        "constraints": [
+            {
+                "id": "scenario_surge_001",
+                "rule": (
+                    f"Emergency surge at {hospital} requires immediate driver reallocation and "
+                    "priority escalation. Planner must address expedited delivery and backup stock."
+                ),
+                "severity": "critical",
+                "source": "ScenarioAgent",
+            }
+        ],
+        "recommendations": [
+            f"Immediately escalate all {hospital} shipments to Tier-1 priority.",
+            "Reallocate drivers from lower-priority routes to cover surge demand.",
+            f"Notify {hospital} pharmacy team of expedited delivery window.",
+            "Trigger backup stock request if on-hand inventory cannot meet surge volume.",
+        ],
+    }
+
+
 def _simulate_one(scenario: Dict[str, Any]) -> Dict[str, Any]:
     scenario_type = scenario.get("type")
     if scenario_type == "demand_spike":
@@ -148,6 +249,10 @@ def _simulate_one(scenario: Dict[str, Any]) -> Dict[str, Any]:
         return _warehouse_closure_result(scenario)
     if scenario_type == "driver_shortage":
         return _driver_shortage_result(scenario)
+    if scenario_type == "route_blockage":
+        return _route_blockage_result(scenario)
+    if scenario_type == "hospital_surge":
+        return _hospital_surge_result(scenario)
 
     return {
         "scenario_name": scenario.get("scenario_name", "Unknown scenario"),
