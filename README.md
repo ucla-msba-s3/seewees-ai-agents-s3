@@ -53,6 +53,43 @@ PYTHONPATH=src python -m pytest -q
 
 The current tests cover AuditAgent failure detection, pass detection, and graph routing after audit pass/fail.
 
+## Demo
+
+Use `docs/demo_plan.md` for the full presentation flow.
+
+Recommended sequence:
+
+1. Demo A: Product walkthrough for a non-technical audience.
+2. Demo B: Stable audit failure case that does not spend API quota.
+3. Demo C: Full product run with Gemini/OpenAI key.
+
+Stable audit demo:
+
+```bash
+PYTHONPATH=src python - <<'PY'
+import json
+from audit_agent import run_audit_agent
+from graph import route_after_audit
+
+with open("examples/audit_fail_case.json", encoding="utf-8") as f:
+    case = json.load(f)
+
+result = run_audit_agent(case["state"])["audit_result"]
+next_step = route_after_audit({"audit_result": result, "audit_retry_count": 1})
+
+print("Audit status:", result["audit_status"])
+print("Next graph step:", next_step)
+for violation in result["violations"]:
+    print(f"- {violation['rule_id']} | {violation['severity']} | {violation['required_fix']}")
+PY
+```
+
+Full product run:
+
+```bash
+python src/main.py
+```
+
 ## LLM Provider and Cost Guardrails
 
 The app can run with either OpenAI or Gemini:
@@ -61,7 +98,7 @@ The app can run with either OpenAI or Gemini:
 LLM_PROVIDER=gemini
 LLM_MODEL=gemini-2.5-flash
 EMBEDDING_PROVIDER=gemini
-EMBEDDING_MODEL=models/text-embedding-004
+EMBEDDING_MODEL=gemini-embedding-001
 GOOGLE_API_KEY=your_google_ai_studio_key
 ```
 
