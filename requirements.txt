@@ -15,3 +15,4 @@ pypdf>=4.0.0
 chromadb>=0.5.0
 langsmith>=0.1.100
 pytest>=8.0.0
+streamlit>=1.41.0

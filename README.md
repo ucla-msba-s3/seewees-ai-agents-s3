@@ -64,6 +64,24 @@ PYTHONPATH=src python -m pytest -q
 
 The current tests cover AuditAgent failure detection, pass detection, and graph routing after audit pass/fail.
 
+## UI Command Center
+
+Run the Streamlit UI:
+
+```bash
+streamlit run src/ui_app.py
+```
+
+The UI includes:
+
+- Overview: product story and agent pipeline.
+- OpsData: local CSV summary and OpsDataAgent contract output.
+- Scenarios: what-if disruption simulation without LLM quota.
+- Audit: deterministic audit failure/success testing without LLM quota.
+- Full Pipeline: complete graph run with PDF RAG, weather, PlannerAgent, AuditAgent, and ReportAgent.
+
+The Full Pipeline tab can call Gemini/OpenAI and weather APIs. Use the other tabs for safe live demos if API quota or network reliability is a concern.
+
 ## Demo
 
 Use `docs/demo_plan.md` for the full presentation flow.
@@ -73,7 +91,8 @@ Recommended sequence:
 1. Demo A: Product walkthrough for a non-technical audience.
 2. Demo B: Stable audit failure case that does not spend API quota.
 3. Demo C: What-if scenario simulation that does not spend API quota.
-4. Demo D: Full product run with Gemini/OpenAI key.
+4. Demo D: UI command center walkthrough.
+5. Demo E: Full product run with Gemini/OpenAI key.
 
 Stable audit demo:
 
