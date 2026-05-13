@@ -1,57 +1,191 @@
 {
   "ops_data_result": {
     "agent_name": "OpsDataAgent",
-    "status": "success",
-    "summary": "Analyzed shipment rows, period-over-period metrics, and data quality issues.",
+    "status": "warning",
+    "summary": "Analyzed 87 shipment rows across 4 locations. Found 3 data quality issue(s) and 1 unknown item ID(s). Location concentration: medium (HHI=0.315). Analysis mode: cross_sectional.",
     "trend_analysis": {
-      "period_type": "period_over_period_by_date",
-      "date_column": "ship_date",
+      "period_type": "cross_sectional_volume_distribution",
+      "note": "CSV has no date column; analysis is cross-sectional over the full incoming shipment batch (single snapshot).",
+      "total_shipment_rows": 87,
+      "location_distribution": {
+        "counts": {
+          "Boston-MGH": 36,
+          "Boston-BWH": 29,
+          "Boston-DanaFarber": 12,
+          "Boston-Children": 10
+        },
+        "percentages": {
+          "Boston-MGH": 0.4138,
+          "Boston-BWH": 0.3333,
+          "Boston-DanaFarber": 0.1379,
+          "Boston-Children": 0.1149
+        }
+      },
+      "concentration_risk": {
+        "hhi_index": 0.3145,
+        "level": "medium",
+        "dominant_location": "Boston-MGH",
+        "dominant_share_pct": 41.4,
+        "interpretation": "Boston-MGH is the largest recipient at 41.4%."
+      },
+      "item_diversity_per_location": {
+        "Boston-BWH": 5,
+        "Boston-Children": 2,
+        "Boston-DanaFarber": 1,
+        "Boston-MGH": 6
+      },
+      "top_item_per_location": {
+        "Boston-BWH": {
+          "item_id": 10022,
+          "item_name": "Insulin Lispro",
+          "units": 19
+        },
+        "Boston-Children": {
+          "item_id": 10040,
+          "item_name": "Epinephrine Auto-Injector",
+          "units": 5
+        },
+        "Boston-DanaFarber": {
+          "item_id": 10035,
+          "item_name": "Pembrolizumab",
+          "units": 12
+        },
+        "Boston-MGH": {
+          "item_id": 10021,
+          "item_name": "Remdesivir 100mg",
+          "units": 26
+        }
+      },
       "metrics": [
         {
-          "metric_name": "delivery_delay_rate",
-          "current_period": 0.14,
-          "previous_period": 0.08,
-          "change_abs": 0.06,
-          "change_pct": 0.75,
-          "trend_direction": "up",
-          "severity": "critical"
+          "metric_name": "location_concentration_hhi",
+          "value": 0.3145,
+          "trend_direction": "N/A \u2014 single snapshot",
+          "severity": "medium"
+        },
+        {
+          "metric_name": "null_unique_item_id_rate",
+          "value": 0.0575,
+          "trend_direction": "N/A \u2014 single snapshot",
+          "severity": "high"
         }
       ]
     },
     "data_quality_issues": [
       {
-        "field": "item_id",
-        "issue": "Missing values detected",
-        "affected_records": 12,
-        "missing_rate": 0.14,
-        "severity": "medium"
+        "field": "unique_item_id",
+        "issue": "Missing unique item identifiers",
+        "affected_records": 5,
+        "missing_rate": 0.0575,
+        "severity": "high",
+        "detail": "5 rows have a null unique_item_id (item_ids affected: [10021, 10022, 10035]). These units cannot be individually tracked or verified at point of delivery."
+      },
+      {
+        "field": "unique_item_id",
+        "issue": "Duplicate unique_item_id assigned across multiple dispatch locations",
+        "affected_records": 10,
+        "missing_rate": null,
+        "severity": "high",
+        "detail": "5 unique IDs appear at >1 facility. Examples: ['ALB-2026-5003', 'EPI-2026-2002', 'HEP-2026-3001', 'MOR-2026-4002', 'PBR-2026-1201']. A single serialized unit cannot be at two locations \u2014 indicates a barcode/labeling error or a data entry mistake."
+      },
+      {
+        "field": "item_name",
+        "issue": "item_id 10021 dosage ambiguity (all names valid per Playbook \u00a78)",
+        "affected_records": 26,
+        "missing_rate": null,
+        "severity": "medium",
+        "detail": "Names found for item_id 10021: ['Remdesivir 100mg', 'Remdesivir 200mg']. All names are valid Playbook \u00a78 variants (Antiviral, Cold (2-8C)), but the CSV rows do not distinguish which specific variant was shipped. Confirm with the warehouse which dosage was actually packed before dispatch."
       }
     ],
     "item_master_matches": [
       {
-        "missing_identifier": "item_id",
-        "matched_item_id": null,
-        "matched_product_class": null,
-        "confidence": 0.0,
-        "source": "Item Master Appendix",
-        "note": "Column has missing identifiers; cross-reference is required before final planning."
+        "missing_identifier": "10071",
+        "item_name_in_csv": "Albuterol Inhaler",
+        "matched_item_id": 10070,
+        "matched_product_class": "Bronchodilator",
+        "matched_temp_control": "Room Temp (20-25C)",
+        "confidence": 1.0,
+        "confidence_band": "HIGH",
+        "alternative_candidates": [],
+        "source": "Item Master Appendix (Playbook \u00a78)",
+        "note": "item_id 10071 ('Albuterol Inhaler') is not in the Item Master. Strong substitute candidate: item_id 10070 ('Albuterol Inhaler', Bronchodilator, Room Temp (20-25C)) with score 1.0. Likely a duplicate ID or typo \u2014 verify with Inventory."
       }
     ],
     "constraints": [
       {
+        "id": "ops_quality_001",
+        "rule": "Planner must acknowledge material data quality issues and explain how they affect dispatch confidence before finalizing the plan.",
+        "severity": "high",
+        "source": "OpsDataAgent"
+      },
+      {
         "id": "ops_trend_001",
-        "rule": "If an operational metric changes by 50% or more period-over-period, planner must explain the dispatch impact.",
+        "rule": "Planner must explain the dispatch impact of volume concentration and any period-over-period or cross-sectional trend anomalies identified by OpsDataAgent.",
         "severity": "high",
         "source": "OpsDataAgent"
       }
     ],
     "recommendations": [
       {
-        "type": "planning_adjustment",
+        "type": "data_remediation",
         "priority": "high",
-        "recommendation": "Review high-change operational metrics before finalizing dispatch buffers and resource allocation."
+        "recommendation": "Resolve 5 null unique_item_id records (5.8% of shipment) before dispatch. Contact the warehouse team to assign barcodes or pull from backup manifest."
+      },
+      {
+        "type": "data_remediation",
+        "priority": "high",
+        "recommendation": "Investigate the cross-location unique_item_id duplicates. Confirm correct destination for each unit and re-label if necessary to prevent misrouting."
+      },
+      {
+        "type": "verification",
+        "priority": "high",
+        "recommendation": "Resolve item_name discrepancy for item_id 26 records. A dosage mismatch (e.g., 100mg vs 200mg) is a patient-safety risk \u2014 hold affected units pending confirmation from the clinical pharmacist."
+      },
+      {
+        "type": "item_master_escalation",
+        "priority": "high",
+        "recommendation": "Escalate unknown item_ids ['10071'] to the Inventory team for Item Master registration. Do not dispatch unregistered items until they are validated."
       }
     ],
-    "data": {}
-  }
+    "data": {
+      "missing_ids": [
+        "10071"
+      ],
+      "llm_insights": {
+        "executive_summary": "LLM synthesis skipped: LLM disabled for sample generation",
+        "top_risks": [],
+        "dispatch_confidence": "low",
+        "_skipped": true
+      },
+      "analysis_metadata": {
+        "total_rows": 87,
+        "columns": [
+          "item_id",
+          "item_name",
+          "unique_item_id",
+          "dispatch_location"
+        ],
+        "has_date_column": false,
+        "analysis_mode": "cross_sectional",
+        "catalog_ids_used": [
+          10021,
+          10022,
+          10035,
+          10040,
+          10050,
+          10060,
+          10070,
+          99999
+        ],
+        "unique_locations": [
+          "Boston-MGH",
+          "Boston-BWH",
+          "Boston-DanaFarber",
+          "Boston-Children"
+        ],
+        "playbook_table_size": 8
+      }
+    }
+  },
+  "_description": "Enhanced OpsDataAgent output \u2014 Direction #3. Incoming_shipment_03_06.csv (87 rows, 4 cols, no date column). Demonstrates: A) Item Master substitution (10071 \u2192 10070, confidence 1.0), B) Period-over-Period mode dormant (no dates), C) Playbook \u00a78 grounding (Remdesivir 100mg/200mg dosage ambiguity correctly flagged MEDIUM, not HIGH \u2014 both names are valid Playbook variants for item_id 10021)."
 }
