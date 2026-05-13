@@ -1,0 +1,145 @@
+{
+  "ops_data_result": {
+    "agent_name": "OpsDataAgent",
+    "status": "warning",
+    "summary": "Analyzed 312 shipment rows across 0 locations. Found 2 data quality issue(s) and 0 unknown item ID(s). Location concentration: unknown (HHI=0.000). Analysis mode: period_over_period. PoP (2026-W20\u21922026-W21): OTDR -10.0%, Risk Score +12.6%.",
+    "trend_analysis": {
+      "period_type": "cross_sectional_volume_distribution",
+      "error": "dispatch_location column not found",
+      "metrics": [],
+      "pop_metrics": {
+        "period_type": "period_over_period",
+        "status": "computed",
+        "current_period": "2026-W21",
+        "previous_period": "2026-W20",
+        "periods_available": [
+          "2026-W14",
+          "2026-W15",
+          "2026-W16",
+          "2026-W17",
+          "2026-W18",
+          "2026-W19",
+          "2026-W20",
+          "2026-W21"
+        ],
+        "current": {
+          "deliveries": 45,
+          "otdr": 0.8,
+          "fill_rate": 0.9067,
+          "temp_compliance_rate": 1.0,
+          "avg_risk_score": 2.78
+        },
+        "previous": {
+          "deliveries": 27,
+          "otdr": 0.8889,
+          "fill_rate": 0.8912,
+          "temp_compliance_rate": 0.963,
+          "avg_risk_score": 2.47
+        },
+        "deltas": {
+          "otdr_pct_change": -10.0,
+          "fill_rate_pct_change": 1.74,
+          "temp_compliance_pct_change": 3.84,
+          "risk_score_pct_change": 12.55
+        },
+        "product_trend_direction": {
+          "MED-XYZ": "declining",
+          "SWS-001": "improving",
+          "SWS-002": "declining",
+          "SWS-007": "declining",
+          "SWS-012": "stable",
+          "SWS-015": "improving",
+          "SWS-099": "stable"
+        },
+        "pop_risk_flags": [
+          {
+            "kpi": "OTDR",
+            "flag": "OTDR dropped 10.0% period-over-period",
+            "severity": "medium"
+          },
+          {
+            "kpi": "Risk Score",
+            "flag": "Average Risk Score up 12.6% \u2014 escalation may be required",
+            "severity": "high"
+          }
+        ],
+        "note": "PoP analysis: 2026-W20 \u2192 2026-W21 (8 periods in CSV)."
+      }
+    },
+    "data_quality_issues": [
+      {
+        "field": "otdr",
+        "issue": "OTDR dropped 10.0% period-over-period",
+        "affected_records": 45,
+        "missing_rate": null,
+        "severity": "medium",
+        "detail": "Period-over-period signal from 2026-W20 \u2192 2026-W21. OTDR dropped 10.0% period-over-period."
+      },
+      {
+        "field": "risk score",
+        "issue": "Average Risk Score up 12.6% \u2014 escalation may be required",
+        "affected_records": 45,
+        "missing_rate": null,
+        "severity": "high",
+        "detail": "Period-over-period signal from 2026-W20 \u2192 2026-W21. Average Risk Score up 12.6% \u2014 escalation may be required."
+      }
+    ],
+    "item_master_matches": [],
+    "constraints": [
+      {
+        "id": "ops_quality_001",
+        "rule": "Planner must acknowledge material data quality issues and explain how they affect dispatch confidence before finalizing the plan.",
+        "severity": "high",
+        "source": "OpsDataAgent"
+      },
+      {
+        "id": "ops_trend_001",
+        "rule": "Planner must explain the dispatch impact of volume concentration and any period-over-period or cross-sectional trend anomalies identified by OpsDataAgent.",
+        "severity": "high",
+        "source": "OpsDataAgent"
+      }
+    ],
+    "recommendations": [],
+    "data": {
+      "missing_ids": [],
+      "llm_insights": {
+        "executive_summary": "LLM synthesis skipped: LLM disabled for sample generation",
+        "top_risks": [],
+        "dispatch_confidence": "low",
+        "_skipped": true
+      },
+      "analysis_metadata": {
+        "total_rows": 312,
+        "columns": [
+          "delivery_id",
+          "product_id",
+          "product_class",
+          "route",
+          "delivery_date",
+          "week",
+          "on_time",
+          "units_ordered",
+          "units_delivered",
+          "temp_compliant",
+          "risk_score",
+          "status"
+        ],
+        "has_date_column": true,
+        "analysis_mode": "period_over_period",
+        "catalog_ids_used": [
+          10021,
+          10022,
+          10035,
+          10040,
+          10050,
+          10060,
+          10070,
+          99999
+        ],
+        "unique_locations": [],
+        "playbook_table_size": 8
+      }
+    }
+  },
+  "_description": "Enhanced OpsDataAgent output \u2014 Direction #3. augmented_ops_data.csv (312 rows, 8 weeks). Demonstrates Period-over-Period mode (B): OTDR -10% WoW, Risk Score +12.55% WoW, 7 products tracked for trend direction."
+}
