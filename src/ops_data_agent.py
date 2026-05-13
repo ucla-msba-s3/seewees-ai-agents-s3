@@ -925,9 +925,11 @@ def run_ops_data_agent(state: dict) -> dict:
     if _HAS_CSV_TOOLS and analyze_csv is not None:
         try:
             ana = analyze_csv(csv_path)
+            anomalies_df = getattr(ana, "anomalies", None)
+            anomalies_count = len(anomalies_df) if anomalies_df is not None else 0
             starter_analysis = {
                 "numeric_cols": getattr(ana, "numeric_cols", []),
-                "anomalies_count": len(getattr(ana, "anomalies", []) or []),
+                "anomalies_count": anomalies_count,
                 "missingness_top": getattr(ana, "summary", {}).get("missingness_top", {}),
                 "rows_after_drop_empty": getattr(ana, "summary", {}).get(
                     "rows_after_drop_empty", len(df)
