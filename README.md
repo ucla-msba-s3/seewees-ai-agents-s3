@@ -4,6 +4,7 @@ Multi-agent system for operations/dispatch planning:
 - Reads business context & KPI definitions from a PDF (RAG)
 - Analyzes ops data from CSV (KPIs + anomaly detection)
 - Pulls weather forecast and derives dispatch risk
+- Extracts structured playbook constraints for AuditAgent enforcement
 - Simulates what-if disruptions such as demand spike, warehouse closure, and driver shortage
 - Enforces a self-correction Audit Loop before report generation
 - Produces a leadership-ready report
@@ -11,8 +12,8 @@ Multi-agent system for operations/dispatch planning:
 
 ## Project Structure
 - `data/` input PDF + CSV
-- `docs/` project background, data augmentation strategy, KPI definitions, and methodology
-- `examples/` sample agent outputs and audit demo cases
+- `docs/` project background, methodology, demo flow, and testing summary
+- `examples/` demo inputs for audit and scenario simulation
 - `src/` application code
 - `chroma_db/` local vector store (not committed)
 - `.env` secrets (not committed)
@@ -32,6 +33,15 @@ Audit fail -> PlannerAgent with feedback
 ```
 
 See `docs/project_background.md` for the business problem, missing-link analysis, KPI definitions, data augmentation strategy, and technical methodology.
+
+## Playbook-Grounded Audit
+
+The PDF context step produces structured `playbook_constraints`, including:
+
+- Weather buffer policy: risk score `0 -> 0%`, `1 -> 10%`, `2 -> 25%`, `3 -> 40%`.
+- Critical risk escalation: risk score `3` requires manager escalation or review.
+
+AuditAgent enforces these constraints at runtime. For example, if weather risk is `2` but PlannerAgent only recommends a `10%` buffer, AuditAgent fails the plan and loops back to PlannerAgent with corrective feedback.
 
 ## What-If Scenarios
 
@@ -62,7 +72,9 @@ windows:  python src/main.py
 PYTHONPATH=src python -m pytest -q
 ```
 
-The current tests cover AuditAgent failure detection, pass detection, and graph routing after audit pass/fail.
+The current tests cover graph construction, audit pass/fail routing, playbook rule extraction, scenario simulation, OpsDataAgent contract behavior, and demo input availability.
+
+See `docs/project_background.md` for the pre-launch testing summary, including unit, integration, end-to-end, failure-mode, and mock stress/load testing.
 
 ## UI Command Center
 

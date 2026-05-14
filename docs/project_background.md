@@ -34,7 +34,7 @@ The current data and documents do not contain every variable needed for realisti
 
 ## Technical Methodology
 
-The graph uses LangGraph with a shared state object. The current architecture is:
+The graph uses LangGraph with a shared state object. The PDF context step also converts key playbook rules into structured `playbook_constraints`, so downstream agents can inspect and enforce rules rather than relying only on prompt text. The current architecture is:
 
 ```text
 pdf_context -> csv_analysis / OpsDataAgent -> weather -> ScenarioAgent -> planner -> audit -> report -> email
@@ -49,6 +49,16 @@ Audit fail -> PlannerAgent with feedback
 ```
 
 The retry limit prevents infinite loops. If the retry limit is reached, the system still produces a report, but the audit result and remaining caveats are passed into the ReportAgent so leadership can see the unresolved risk.
+
+## Playbook-Grounded Rule Extraction
+
+The system does not rely only on prompt instructions for playbook compliance. The PDF context node produces structured rules such as:
+
+- `weather_buffer_policy`: risk score `0 -> 0%`, `1 -> 10%`, `2 -> 25%`, `3 -> 40%` travel time buffer.
+- `weather_escalation_policy`: risk score `3` requires manager escalation or review.
+- Weather trigger references for heavy precipitation, high wind, and freezing risk when those thresholds are retrieved from the playbook.
+
+AuditAgent reads `state["playbook_constraints"]` and checks the PlannerAgent output against those rules. This makes playbook grounding part of runtime behavior, not just documentation.
 
 ## What-If Scenario Simulation
 
@@ -65,6 +75,7 @@ Each scenario produces KPI impacts, constraints, and contingency recommendations
 The AuditAgent acts as the quality gate. It enforces:
 
 - Safety rules extracted from the playbook and weather risk contract.
+- Structured playbook constraints, including buffer policy and critical-risk escalation.
 - Constraints emitted by OpsDataAgent, including data quality and trend-impact requirements.
 - Constraints emitted by ScenarioAgent, including capacity, rerouting, warehouse, and driver shortage contingencies.
 - Executive readiness checks, such as requiring escalation language for critical risk.
@@ -82,3 +93,23 @@ The final report should be concise and decision-oriented. It should include:
 - Audit status, corrections made, and any remaining caveats.
 
 The goal is not just to summarize data. The report should explain what leadership should do, why it matters, and which operational constraints support the recommendation.
+
+## Pre-Launch Testing Summary
+
+The project validates production readiness across five test categories:
+
+| Category | Purpose | Example | Metric |
+| --- | --- | --- | --- |
+| Unit tests | Validate individual agent logic. | AuditAgent catches missing escalation or wrong buffer. | Test pass rate, exception rate. |
+| Integration tests | Validate agent contracts. | OpsDataAgent/ScenarioAgent constraints trigger AuditAgent. | Contract completeness, audit detection rate. |
+| End-to-end tests | Validate full graph behavior. | `python src/main.py` or Streamlit Full Pipeline. | Graph completion, report generated, final audit status. |
+| Failure-mode tests | Validate unsafe-plan handling. | Risk score 3 without escalation loops back to PlannerAgent. | False pass rate, retry routing correctness. |
+| Stress/load tests | Validate deterministic logic without API cost. | Repeated AuditAgent and ScenarioAgent mock runs. | p95 latency, throughput, error rate. |
+
+Current local test result:
+
+```text
+24 passed, 1 skipped, 1 warning
+```
+
+The skipped test is optional PoP mode coverage that activates only if `data/augmented_ops_data.csv` is present. The warning is a dependency-level LangGraph warning, not a project failure.

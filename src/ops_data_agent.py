@@ -890,13 +890,18 @@ def _llm_synthesis(
 # ─────────────────────────────────────────────────────────────────────────────
 # Public entry point
 # ─────────────────────────────────────────────────────────────────────────────
-def run_ops_data_agent(state: dict) -> dict:
+def run_ops_data_agent(state: dict, skip_llm: bool = False) -> dict:
     """
     Analyze the incoming shipment CSV for cross-sectional volume distribution,
     data quality issues, and Item Master mismatches.
 
+    Args:
+        state: dict with csv_path and optional business_context.
+        skip_llm: if True, skip the LLM narrative synthesis (returns deterministic
+                  analysis only — useful for UI contract-validation tabs).
+
     Returns:
-        {"ops_data_result": { ... }}  — shape matches examples/ops_data_agent_sample_output.json
+        {"ops_data_result": { ... }} with the contract described in README and tests.
     """
     csv_path: str = state.get("csv_path", "")
     business_context: str = state.get("business_context", "")
@@ -988,16 +993,24 @@ def run_ops_data_agent(state: dict) -> dict:
     )
 
     # ── LLM narrative synthesis (1 call, budget-safe) ─────────────────────────
-    llm_insights = _llm_synthesis(
-        total_rows=total_rows,
-        loc_counts=loc_counts,
-        data_quality_issues=data_quality_issues,
-        unknown_ids=missing_ids,
-        hhi=hhi,
-        concentration_level=concentration_level,
-        dominant_location=dominant_location,
-        dominant_pct=dominant_pct,
-    )
+    if skip_llm:
+        llm_insights = {
+            "executive_summary": "LLM synthesis skipped (skip_llm=True).",
+            "top_risks": [],
+            "dispatch_confidence": "medium",
+            "_skipped": True,
+        }
+    else:
+        llm_insights = _llm_synthesis(
+            total_rows=total_rows,
+            loc_counts=loc_counts,
+            data_quality_issues=data_quality_issues,
+            unknown_ids=missing_ids,
+            hhi=hhi,
+            concentration_level=concentration_level,
+            dominant_location=dominant_location,
+            dominant_pct=dominant_pct,
+        )
 
     # ── Derive overall status ─────────────────────────────────────────────────
     has_high_issues = any(i.get("severity") == "high" for i in data_quality_issues)

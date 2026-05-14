@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any, Callable, Dict, List
 
 
@@ -17,6 +18,17 @@ def _risk_score(weather_risk: Dict[str, Any]) -> int | None:
 def _plan_contains_any(dispatch_plan: str, terms: tuple[str, ...]) -> bool:
     lowered = dispatch_plan.lower()
     return any(term in lowered for term in terms)
+
+
+def _plan_mentions_buffer(dispatch_plan: str, pct: int) -> bool:
+    lowered = dispatch_plan.lower()
+    patterns = (
+        rf"\b{pct}\s*%\D{{0,30}}\bbuffer\b",
+        rf"\b{pct}\s*percent\D{{0,30}}\bbuffer\b",
+        rf"\b{pct}\s*[- ]?percent\b",
+        rf"\b{pct}\s*%\b",
+    )
+    return any(re.search(pattern, lowered) for pattern in patterns)
 
 
 def _violation(
@@ -161,7 +173,86 @@ def _check_scenario_constraints_addressed(state: dict) -> Dict[str, Any] | None:
     return None
 
 
+def _check_playbook_buffer_policy(state: dict) -> Dict[str, Any] | None:
+    dispatch_plan = state.get("dispatch_plan", "")
+    score = _risk_score(state.get("weather_risk", {}))
+    if score is None:
+        return None
+
+    constraints = state.get("playbook_constraints", [])
+    buffer_constraints = [
+        constraint for constraint in constraints
+        if constraint.get("rule_type") == "weather_buffer_policy"
+    ]
+    if not buffer_constraints:
+        return None
+
+    constraint = buffer_constraints[0]
+    policy = constraint.get("parameters", {}).get("buffer_pct_by_risk_score", {})
+    expected_pct = policy.get(score, policy.get(str(score)))
+    if expected_pct is None:
+        return None
+
+    expected_pct = int(expected_pct)
+    if not _plan_mentions_buffer(dispatch_plan, expected_pct):
+        return _violation(
+            rule_id=constraint.get("id", "playbook_weather_buffer_001"),
+            rule=constraint.get("rule", "Planner must follow the playbook weather buffer policy."),
+            issue=(
+                f"Planner did not mention the required {expected_pct}% buffer "
+                f"for weather risk_score={score}."
+            ),
+            required_fix=(
+                f"Revise the dispatch plan to include the playbook-required "
+                f"{expected_pct}% travel time buffer for risk_score={score}."
+            ),
+            source=constraint.get("source", "SeeWeeS Dispatch Playbook"),
+            severity=constraint.get("severity", "high"),
+        )
+    return None
+
+
+def _check_playbook_escalation_policy(state: dict) -> Dict[str, Any] | None:
+    dispatch_plan = state.get("dispatch_plan", "")
+    score = _risk_score(state.get("weather_risk", {}))
+    if score is None:
+        return None
+
+    constraints = state.get("playbook_constraints", [])
+    escalation_constraints = [
+        constraint for constraint in constraints
+        if constraint.get("rule_type") == "weather_escalation_policy"
+    ]
+    if not escalation_constraints:
+        return None
+
+    constraint = escalation_constraints[0]
+    required_scores = constraint.get("parameters", {}).get("escalation_required_scores", [])
+    if score in required_scores and not _plan_contains_any(dispatch_plan, ("escalat", "manager", "review", "approval")):
+        return _violation(
+            rule_id=constraint.get("id", "playbook_weather_escalation_001"),
+            rule=constraint.get("rule", "Planner must require escalation for critical weather risk."),
+            issue=f"Planner did not include manager escalation for playbook risk_score={score}.",
+            required_fix="Add explicit manager escalation or approval before final dispatch.",
+            source=constraint.get("source", "SeeWeeS Dispatch Playbook"),
+            severity=constraint.get("severity", "critical"),
+        )
+    return None
+
+
 AUDIT_RULES: List[Dict[str, Any]] = [
+    {
+        "id": "playbook_weather_buffer_001",
+        "description": "PDF-extracted weather risk score must map to the required travel buffer.",
+        "source": "SeeWeeS Dispatch Playbook",
+        "check": _check_playbook_buffer_policy,
+    },
+    {
+        "id": "playbook_weather_escalation_001",
+        "description": "PDF-extracted critical weather policy requires escalation.",
+        "source": "SeeWeeS Dispatch Playbook",
+        "check": _check_playbook_escalation_policy,
+    },
     {
         "id": "safety_weather_001",
         "description": "Critical weather risk requires explicit escalation.",

@@ -44,6 +44,7 @@ PLANNER_PROMPT = ChatPromptTemplate.from_messages([
      "OpsDataAgent structured result:\n{ops_data_result}\n\n"
      "Weather risk:\n{weather_risk}\n\n"
      "ScenarioAgent what-if simulation result:\n{scenario_result}\n\n"
+     "Structured playbook constraints extracted from PDF:\n{playbook_constraints}\n\n"
      "Audit feedback from previous attempt, if any:\n{audit_feedback}\n\n"
      "Return:\n"
      "1) Dispatch plan for next 24-48h (include buffer recommendation using the mapping above)\n"
@@ -82,5 +83,6 @@ REPORT_PROMPT = ChatPromptTemplate.from_messages([
      "Dispatch plan:\n{dispatch_plan}\n\n"
      "Audit result:\n{audit_result}\n\n"
      "Scenario simulation result:\n{scenario_result}\n\n"
+     "Structured playbook constraints:\n{playbook_constraints}\n\n"
      "Generate HTML report.")
 ])

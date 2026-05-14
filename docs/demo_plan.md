@@ -33,6 +33,7 @@ Steps:
 
 4. Explain each agent in one sentence.
    - ContextAgent extracts business rules, constraints, thresholds, and escalation policies from the PDF.
+   - Playbook constraints are converted into structured rules, including buffer policy and escalation policy.
    - OpsDataAgent analyzes shipment data, missing fields, trends, item mappings, and planning constraints.
    - WeatherAgent converts corridor forecasts into route-level risk scores.
    - ScenarioAgent simulates demand spike, warehouse closure, and driver shortage impacts on KPIs.
@@ -49,6 +50,12 @@ Talk track:
 
 ```text
 The core value is not only that we generate a report. The system identifies missing operational links, augments the data, turns them into KPIs and constraints, and blocks unsafe recommendations before leadership sees them.
+```
+
+Optional playbook-grounding note:
+
+```text
+The playbook rules are not only in the prompt. The PDF context step creates structured playbook constraints, and AuditAgent enforces them at runtime. For example, risk score 2 requires a 25% buffer, and risk score 3 requires a 40% buffer plus manager escalation.
 ```
 
 ## Demo B: Stable Audit Failure Case

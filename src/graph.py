@@ -14,6 +14,7 @@ from tools.email_tools import send_email_smtp
 from agents import run_context_agent, run_ops_agent, run_planner_agent, run_report_agent
 from audit_agent import run_audit_agent
 from ops_data_agent import run_ops_data_agent
+from playbook_rules import extract_playbook_constraints
 from scenario_agent import run_scenario_agent
 
 load_dotenv()
@@ -24,6 +25,7 @@ class AppState(TypedDict, total=False):
     csv_path: str
 
     business_context: str
+    playbook_constraints: List[Dict[str, Any]]
 
     csv_summary: Dict[str, Any]
     csv_kpis: Dict[str, Any]
@@ -53,7 +55,11 @@ def node_pdf_context(state: AppState) -> AppState:
     snippets = "\n\n---\n\n".join(d.page_content for d in docs)
 
     business_context = run_context_agent(snippets)
-    return {"business_context": business_context}
+    playbook_constraints = extract_playbook_constraints(snippets, business_context)
+    return {
+        "business_context": business_context,
+        "playbook_constraints": playbook_constraints,
+    }
 
 
 def node_csv_analysis(state: AppState) -> AppState:
@@ -192,6 +198,7 @@ def node_planner(state: AppState) -> AppState:
         weather_risk=state.get("weather_risk", {}),
         ops_data_result=state.get("ops_data_result", {}),
         scenario_result=state.get("scenario_result", {}),
+        playbook_constraints=state.get("playbook_constraints", []),
         audit_feedback=state.get("audit_feedback", ""),
     )
     return {"dispatch_plan": plan}
@@ -230,6 +237,7 @@ def node_report(state: AppState) -> AppState:
         dispatch_plan=state.get("dispatch_plan", ""),
         audit_result=state.get("audit_result", {}),
         scenario_result=state.get("scenario_result", {}),
+        playbook_constraints=state.get("playbook_constraints", []),
     )
     return {"report_html": html}
 
