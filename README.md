@@ -179,6 +179,7 @@ The Ops Data and Full Pipeline tabs include `st.file_uploader` widgets. Default 
 ## Tests
 
 ```bash
+source .venv/bin/activate
 PYTHONPATH=src python -m pytest -q
 ```
 
