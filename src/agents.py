@@ -40,6 +40,12 @@ def _check_call_budget() -> None:
     _llm_calls += 1
 
 
+def reset_call_budget() -> None:
+    """Reset the per-run LLM call counter. Call once at the start of each pipeline run."""
+    global _llm_calls
+    _llm_calls = 0
+
+
 def get_llm() -> Any:
     global _llm
     if _llm is None:

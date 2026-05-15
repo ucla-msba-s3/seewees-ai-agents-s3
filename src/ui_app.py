@@ -8,6 +8,7 @@ from typing import Any, Dict
 import streamlit as st
 from dotenv import load_dotenv
 
+from agents import reset_call_budget
 from audit_agent import run_audit_agent
 from graph import build_graph, route_after_audit
 from ops_data_agent import run_ops_data_agent
@@ -1014,6 +1015,7 @@ def render_full_pipeline_tab() -> None:
         default_scenarios = _load_json(SCENARIO_EXAMPLE).get("scenarios", [])
 
         try:
+            reset_call_budget()
             state = {"pdf_path": pdf_path, "csv_path": csv_path, "scenarios": default_scenarios}
 
             with st.spinner("Running multi-agent graph — this may take 30–90 seconds…"):
@@ -1022,6 +1024,10 @@ def render_full_pipeline_tab() -> None:
 
             OUTPUT_DIR.mkdir(exist_ok=True)
             report_html = final.get("report_html", "")
+            # Strip markdown code fences the LLM sometimes wraps around HTML output
+            import re as _re
+            report_html = _re.sub(r"^```(?:html)?\s*", "", report_html.strip(), flags=_re.IGNORECASE)
+            report_html = _re.sub(r"\s*```$", "", report_html.strip())
             (OUTPUT_DIR / "report.html").write_text(report_html, encoding="utf-8")
 
             audit_result    = final.get("audit_result",    {})
@@ -1165,8 +1171,8 @@ def render_full_pipeline_tab() -> None:
                     file_name="dispatch_report.html",
                     mime="text/html",
                 )
-                with st.expander("📄  View Full Report", expanded=False):
-                    st.markdown(report_html, unsafe_allow_html=True)
+                import streamlit.components.v1 as _components
+                _components.html(report_html, height=900, scrolling=True)
 
         except Exception as exc:
             st.exception(exc)
