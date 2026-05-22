@@ -79,13 +79,20 @@ The AuditAgent enforces 7 deterministic rules — no LLM involved:
 ## Project Structure
 
 ```
-MSBA_AI_Agents_Demo/
+seewees-ai-agents-s3/
 ├── data/
-│   ├── SeeWeeS Specialty Dispatch Playbook.pdf   # source of business rules
-│   └── Incoming_shipment_03_06.csv               # incoming shipment batch
+│   ├── SeeWeeS Specialty Dispatch Playbook.pdf        # source of business rules
+│   ├── About SeeWeeS Specialty distribution.pdf       # company background
+│   └── Incoming_shipment_03_06.csv                    # incoming shipment batch
+├── docs/
+│   └── SeeWeeS_Technical_Business_Documentation_S3.pdf  # technical & business documentation
 ├── examples/
 │   ├── audit_fail_case.json                      # preloaded audit demo input
-│   └── scenario_input.json                       # preloaded scenario demo input
+│   ├── scenario_input.json                       # preloaded scenario demo input
+│   ├── ops_data_agent_sample_output.json         # sample OpsDataAgent output
+│   └── ops_data_agent_sample_output_pop.json     # sample OpsDataAgent PoP output
+├── prompts/
+│   └── ops_data_agent_prompt.md                  # OpsDataAgent prompt template
 ├── src/
 │   ├── ui_app.py          # Streamlit UI (5 tabs)
 │   ├── graph.py           # LangGraph state machine
@@ -95,16 +102,26 @@ MSBA_AI_Agents_Demo/
 │   ├── scenario_agent.py  # ScenarioAgent simulation
 │   ├── playbook_rules.py  # Playbook constraint extractor
 │   ├── prompts.py         # LLM prompt templates
+│   ├── tracing.py         # LangSmith tracing integration
 │   ├── main.py            # CLI entry point
 │   └── tools/
 │       ├── csv_tools.py      # CSV analysis + anomaly detection
 │       ├── pdf_tools.py      # PDF RAG (ChromaDB)
 │       ├── weather_tools.py  # Open-Meteo API + risk scoring
 │       └── email_tools.py    # SMTP report delivery
+├── tests/
+│   ├── conftest.py
+│   ├── test_audit_agent.py
+│   ├── test_graph_routing.py
+│   ├── test_ops_data_agent.py
+│   ├── test_scenario_agent.py
+│   └── test_smoke.py
+├── .devcontainer/
+│   └── devcontainer.json  # Dev Container configuration
 ├── .streamlit/
 │   └── config.toml        # forces light mode
 ├── chroma_db/             # local vector store (not committed)
-├── outputs/               # generated report.html
+├── outputs/               # generated report.html (not committed)
 ├── .env                   # secrets (not committed)
 └── .env.example
 ```
